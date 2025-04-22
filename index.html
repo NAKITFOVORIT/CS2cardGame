@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Карточная игра</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background-color: #1e1e1e;
+    }
+
+    .card-animate {
+      transform: rotateY(180deg);
+      opacity: 0;
+      transition: transform 0.6s ease, opacity 0.4s ease;
+      transform-origin: center;
+    }
+
+    .card-show {
+      transform: rotateY(0deg);
+      opacity: 1;
+    }
+
+    .card-wrapper {
+      perspective: 1000px;
+    }
+
+    .card-content {
+      width: 240px;
+      height: 330px;
+      transform-style: preserve-3d;
+      transition: transform 0.6s;
+    }
+
+    .card-front, .card-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+    }
+
+    .card-back {
+      transform: rotateY(180deg);
+    }
+  </style>
+</head>
+<body class="text-white flex flex-col items-center justify-center min-h-screen">
+
+  <!-- Стартовый экран -->
+  <div id="start-screen" class="flex flex-col items-center space-y-4">
+    <h1 class="text-2xl font-bold mb-4">Выберите количество игроков</h1>
+    <div class="flex space-x-4">
+      <button class="bg-blue-600 px-4 py-2 rounded" onclick="startGame(2)">2 игрока</button>
+      <button class="bg-blue-600 px-4 py-2 rounded" onclick="startGame(3)">3 игрока</button>
+      <button class="bg-blue-600 px-4 py-2 rounded" onclick="startGame(4)">4 игрока</button>
+      <button class="bg-blue-600 px-4 py-2 rounded" onclick="startGame(5)">5 игроков</button>
+    </div>
+  </div>
+
+  <!-- Игровой экран -->
+  <div id="game-screen" class="hidden flex flex-col items-center">
+    <img id="deck" src="images/back.png" alt="Колода"
+      class="w-40 h-auto cursor-pointer rounded-xl shadow-lg mb-2 hover:scale-105 transition duration-300" />
+    <div id="counter" class="text-lg font-medium mb-4">Осталось карт: 12</div>
+
+    <div class="flex space-x-4 mb-6">
+      <button id="reset"
+        class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-xl shadow transition">
+        Сбросить колоду
+      </button>
+      <button id="back"
+        class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-xl shadow transition">
+        Назад к выбору
+      </button>
+    </div>
+
+    <div id="cards" class="grid grid-cols-4 gap-6 justify-center px-4"></div>
+  </div>
+
+  <script>
+    const fullDeck = Array.from({ length: 24 }, (_, i) => `images/card${i + 1}.png`);
+    let remainingDeck = [...fullDeck];
+
+    const deck = document.getElementById('deck');
+    const resetBtn = document.getElementById('reset');
+    const backBtn = document.getElementById('back');
+    const cardsContainer = document.getElementById('cards');
+    const counter = document.getElementById('counter');
+    const startScreen = document.getElementById('start-screen');
+    const gameScreen = document.getElementById('game-screen');
+
+    let players = [];
+    let currentPlayerIndex = 0;
+    let drawnInSet = 0;
+    let cardsPerSet = 4;
+
+    function updateCounter() {
+      counter.textContent = `Осталось карт: ${remainingDeck.length}`;
+    }
+
+    function startGame(playerCount) {
+      players = ['Миша', 'Ваня', 'Макс', 'Валера', 'Саша'].slice(0, playerCount);
+      cardsPerSet = playerCount;
+      remainingDeck = [...fullDeck];
+      currentPlayerIndex = 0;
+      drawnInSet = 0;
+      cardsContainer.innerHTML = '';
+      startScreen.classList.add('hidden');
+      gameScreen.classList.remove('hidden');
+      updateCounter();
+    }
+
+    deck.addEventListener('click', () => {
+      if (remainingDeck.length === 0) {
+        alert('Колода пуста!');
+        return;
+      }
+
+      if (drawnInSet === cardsPerSet) {
+        cardsContainer.innerHTML = '';
+        drawnInSet = 0;
+      }
+
+      const index = Math.floor(Math.random() * remainingDeck.length);
+      const cardSrc = remainingDeck.splice(index, 1)[0];
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'flex flex-col items-center card-wrapper';
+
+      const label = document.createElement('div');
+      label.textContent = players[currentPlayerIndex];
+      label.className = 'mb-2 text-sm text-gray-300';
+
+      const cardContent = document.createElement('div');
+      cardContent.className = 'card-content card-animate';
+
+      const cardFront = document.createElement('img');
+      cardFront.src = cardSrc;
+      cardFront.className = 'rounded-xl shadow-md w-full h-full card-front';
+
+      const cardBack = document.createElement('img');
+      cardBack.src = 'images/back.png';
+      cardBack.className = 'rounded-xl shadow-md w-full h-full card-back';
+
+      cardContent.appendChild(cardFront);
+      cardContent.appendChild(cardBack);
+      wrapper.appendChild(label);
+      wrapper.appendChild(cardContent);
+      cardsContainer.appendChild(wrapper);
+
+      setTimeout(() => {
+        cardContent.classList.add('card-show');
+      }, 10);
+
+      currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+      drawnInSet++;
+      updateCounter();
+    });
+
+    resetBtn.addEventListener('click', () => {
+      remainingDeck = [...fullDeck];
+      cardsContainer.innerHTML = '';
+      currentPlayerIndex = 0;
+      drawnInSet = 0;
+      updateCounter();
+    });
+
+    backBtn.addEventListener('click', () => {
+      gameScreen.classList.add('hidden');
+      startScreen.classList.remove('hidden');
+      remainingDeck = [...fullDeck];
+      cardsContainer.innerHTML = '';
+      currentPlayerIndex = 0;
+      drawnInSet = 0;
+      updateCounter();
+    });
+  </script>
+</body>
+</html>
